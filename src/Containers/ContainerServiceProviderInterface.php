@@ -1,6 +1,6 @@
 <?php
 
-namespace Jakmall\Recruitment\Calculator\Container;
+namespace Jakmall\Recruitment\Calculator\Containers;
 
 use Illuminate\Contracts\Container\Container;
 
