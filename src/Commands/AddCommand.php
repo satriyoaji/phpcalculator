@@ -3,6 +3,7 @@
 namespace Jakmall\Recruitment\Calculator\Commands;
 
 use Illuminate\Console\Command;
+use Jakmall\Recruitment\Calculator\History\Infrastructure\CommandHistoryManagerInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
@@ -20,10 +21,12 @@ class AddCommand extends Command
      */
     protected $description;
 
+    public $logme;
 
-    public function __construct()
+    public function __construct(CommandHistoryManagerInterface $logger)
     {
         parent::__construct();
+        $this->logme=$logger;
         $commandVerb = $this->getCommandVerb();
 
         $this->signature = sprintf(
@@ -61,7 +64,11 @@ class AddCommand extends Command
         $numbers = $this->getInput();
         $description = $this->generateCalculationDescription($numbers);
         $result = $this->calculateAll($numbers);
-
+        $this->logme->log([
+            'command'=>$this->getCommandVerb(),
+            'operation'=>$description,
+            'result'=>$result
+        ]);
         $this->comment(sprintf('%s = %s', $description, $result));
     }
 
