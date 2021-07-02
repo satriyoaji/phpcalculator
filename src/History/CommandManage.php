@@ -11,7 +11,7 @@ class CommandManage implements CommandHistoryManagerInterface
     public $driver;
 
     public $ResourceFile = [
-        'file'      => 'mesinhitung',
+        'file'      => 'calculator',
         'latest'    => 'latest',
         'composite' => 'composite'
     ];
