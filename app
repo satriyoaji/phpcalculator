@@ -14,6 +14,12 @@ try {
     $dispatcher = new Dispatcher();
     $app = new Application($container, $dispatcher, '0.1');
     $app->setName('Calculator');
+    $configFile = require_once __DIR__ . '/config/config.php';
+    $providers = $configFile['providers'];
+
+    foreach ($providers as $provider) {
+        $container->make($provider)->register($container);
+    }
 
     $commands = require_once __DIR__.'/commands.php';
     $commands = collect($commands)
