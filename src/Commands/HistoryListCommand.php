@@ -13,7 +13,7 @@ class HistoryListCommand extends Command
     /**
      * @var string
      */
-    protected $signature = "history:list {--driver=file,latest,composite}";
+    protected $signature = "history:list {--driver=latest}";
     /**
      * @var string
      */
@@ -47,6 +47,10 @@ class HistoryListCommand extends Command
 
         $manage=new CommandManage();
         $manage->driver= $driver;
+        if(empty($driver))
+        {
+            $this->comment('Driver not set --driver=xxxx');
+        }
         $data = $manage->findAll($commands);
 
         if (!empty($data)) {

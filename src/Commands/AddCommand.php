@@ -3,7 +3,6 @@
 namespace Jakmall\Recruitment\Calculator\Commands;
 
 use Illuminate\Console\Command;
-use Jakmall\Recruitment\Calculator\History\Infrastructure\CommandHistoryManagerInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
@@ -21,12 +20,9 @@ class AddCommand extends Command
      */
     protected $description;
 
-    public $logme;
-
-    public function __construct(CommandHistoryManagerInterface $logger)
+    public function __construct()
     {
         parent::__construct();
-        $this->logme=$logger;
         $commandVerb = $this->getCommandVerb();
 
         $this->signature = sprintf(
@@ -64,12 +60,27 @@ class AddCommand extends Command
         $numbers = $this->getInput();
         $description = $this->generateCalculationDescription($numbers);
         $result = $this->calculateAll($numbers);
-        $this->logme->log([
+        $logme= new CommandHistoryServiceProvider();
+        $logme->log([
             'command'=>$this->getCommandVerb(),
             'operation'=>$description,
             'result'=>$result
         ]);
         $this->comment(sprintf('%s = %s', $description, $result));
+    }
+
+    public function apiHandle($input): array
+    {
+        $description = $this->generateCalculationDescription($input);
+        $result = $this->calculateAll($input);
+        $output = [
+            'command' => $this->getCommandVerb(),
+            'operation' => $description,
+            'result' => $result
+        ];
+        $logme = new CommandHistoryServiceProvider();
+        $logme->log($output);
+        return $output;
     }
 
     protected function getInput(): array
