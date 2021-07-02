@@ -40,35 +40,36 @@ class CommandHistoryServiceProvider implements ContainerServiceProviderInterface
     public function findAll($filter = null): array
     {
         $output = [];
-        $findID = '';
-        if (!empty($filter)) {
-            $findID = $filter[0];
-        }
         $file = strtr($this->driver, $this->ResourceFile);
         $log_file_path = __DIR__ . '../../../' . $this->path_folder . '/' . $file . '.log';
+        if(!file_exists($log_file_path) && !is_file($log_file_path))
+        {
+            return array();
+        }
         $f = fopen($log_file_path, 'r');
         if ($f === false) {
             throw new Exception("File not found");
         }
-        $read = fread($f, filesize($log_file_path));
+        $file_size= filesize($log_file_path);
+        if($file_size == 0)
+        {
+            return array();
+        }
+        $read = fread($f, $file_size);
         if (empty($read)) {
             return array();
         }
         $explode_new_line = explode("\n", $read);
 
         $data = $explode_new_line;
-        if ($findID > 0) {
-            $data = [];
-            $data[] = $explode_new_line[$findID - 1];
-        }
-
+        $data_output = [];
         foreach ($data as $line) {
             $explode_segment = explode(":", $line);
             $id_unique = !empty($explode_segment[0]) ? $explode_segment[0] : "";
             if ($id_unique != "") {
-                $output[] = [
+                $data_output[] = [
                     'id' => $id_unique,
-                    'time' => date('Y-m-d H:i:s', $explode_segment[1]),
+                    'time' => $explode_segment[1],
                     'command' => $explode_segment[2],
                     'operation' => $explode_segment[3],
                     'result' => $explode_segment[4]
@@ -77,7 +78,11 @@ class CommandHistoryServiceProvider implements ContainerServiceProviderInterface
         }
 
         fclose($f);
-
+        $output=collect($data_output)->toArray();
+        if(!empty($filter))
+        {
+            $output=collect($data_output)->where('id', $filter)->toArray();
+        }
 
         return $output;
     }
@@ -143,9 +148,31 @@ class CommandHistoryServiceProvider implements ContainerServiceProviderInterface
 
     private function RemoveByLineDriver($driver, $findID)
     {
+        $this->driver = $driver;
+        $remove=collect($this->findAll())->whereNotIn('id',[$findID])->toArray();
+        $file = strtr($driver, $this->ResourceFile);
+        $log_file_path = __DIR__ . '../../../' . $this->path_folder . '/' . $file . '.log';
+        file_put_contents($log_file_path, "");
+
+        foreach ($remove as $row) {
+            if (!empty($row['id'])) {
+                $txt_append = $row['id'] . ':' . $row['time'] . ':' . $row['command'] . ':' . $row['operation'] . ':' . $row['result'];
+                file_put_contents($log_file_path, $txt_append . "\n", FILE_APPEND);
+            }
+        }
+    }
+
+
+    private function RemoveByLineDriver2($driver, $findID)
+    {
         $output = [];
         $file = strtr($driver, $this->ResourceFile);
         $log_file_path = __DIR__ . '../../../' . $this->path_folder . '/' . $file . '.log';
+
+        if (!file_exists($log_file_path) && !is_file($log_file_path)) {
+            return array();
+        }
+
         $f = fopen($log_file_path, 'r');
         if ($f === false) {
             throw new Exception("File not found");
@@ -159,8 +186,11 @@ class CommandHistoryServiceProvider implements ContainerServiceProviderInterface
         $checking = false;
         foreach ($explode as $line) {
             $explode_segment = explode(":", $line);
+
+
             if (!isset($explode_segment[0])) {
                 $id = $explode_segment[0];
+
                 if ($findID != $id) {
                     $output[] = [
                         'id' => $explode_segment[0],
@@ -178,7 +208,7 @@ class CommandHistoryServiceProvider implements ContainerServiceProviderInterface
         fclose($f);
 
         if ($checking == false) {
-            return true;
+            return false;
         }
 
         $file = strtr($driver, $this->ResourceFile);

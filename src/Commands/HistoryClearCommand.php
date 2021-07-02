@@ -3,10 +3,10 @@
 namespace Jakmall\Recruitment\Calculator\Commands;
 
 use Illuminate\Console\Command;
+use Jakmall\Recruitment\Calculator\History\CommandHistoryServiceProvider;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
-use Jakmall\Recruitment\Calculator\History\CommandManage;
 
 class HistoryClearCommand extends Command
 {
@@ -44,11 +44,16 @@ class HistoryClearCommand extends Command
     {
         $commands = $this->getCommand();
 
-        $manage = new CommandManage();
+        $manage = new CommandHistoryServiceProvider();
         if(!empty($commands))
         {
-            $manage->clear($commands);
-            $this->comment(sprintf('Data with ID %s is removed', $commands[0]));
+            $action=$manage->clear($commands);
+            if($action == false)
+            {
+                $this->comment(sprintf('Data %s not found', $commands));
+            }else{
+                $this->comment(sprintf('Data with ID %s is removed', $commands));
+            }
         }else{
             $manage->clearAll();
             $this->comment('All history is cleared');
