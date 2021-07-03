@@ -99,27 +99,37 @@ class CommandHistoryServiceProvider implements ContainerServiceProviderInterface
         $txt_append = $new_id . ':' . $current_time . ':' . $data['command'] . ':' . $data['operation'] . ':' . $data['result'];
         //1:timeint:add:1+2+3:6\n
         foreach ($this->ResourceFile as $key => $value) {
-            $this->log_single($key, $txt_append);
+            $this->log_single($key, $txt_append, $data['operation']);
         }
 
         return true;
     }
 
-    private function log_single($driver, $txt_append)
+    private function log_single($driver, $txt_append, $operation)
     {
         $file = strtr($driver, $this->ResourceFile);
         $log_file_path = __DIR__ . '../../../'.$this->path_folder . '/' . $file . '.log';
 
-        file_put_contents($log_file_path, $txt_append . "\n", FILE_APPEND);
         if ($driver == "latest") {
             $current_info = $this->get_current_info($driver);
-            $count_line = $current_info['count_data'] ? $current_info['count_data'] : 0;
+            $this->driver = $driver;
+            $all_data_driver=$this->findAll();
+            $count_line = isset($current_info['count_data']) ? $current_info['count_data'] : 0;
+            if($count_line > 0)
+            {
+                $check=collect($all_data_driver)->where('operation',$operation)->count();
+                if($check)
+                {
+                    return NULL;
+                }
+            }
             $count = $count_line - 1;
             if ($count >= 10) {
                 $first_info = $this->get_first_info($driver);
                 $this->RemoveByLineDriver($driver, $first_info[0]);
             }
         }
+        file_put_contents($log_file_path, $txt_append . "\n", FILE_APPEND);
     }
 
     public function clearAll(): bool
@@ -160,69 +170,6 @@ class CommandHistoryServiceProvider implements ContainerServiceProviderInterface
                 file_put_contents($log_file_path, $txt_append . "\n", FILE_APPEND);
             }
         }
-    }
-
-
-    private function RemoveByLineDriver2($driver, $findID)
-    {
-        $output = [];
-        $file = strtr($driver, $this->ResourceFile);
-        $log_file_path = __DIR__ . '../../../' . $this->path_folder . '/' . $file . '.log';
-
-        if (!file_exists($log_file_path) && !is_file($log_file_path)) {
-            return array();
-        }
-
-        $f = fopen($log_file_path, 'r');
-        if ($f === false) {
-            throw new Exception("File not found");
-        }
-        $file_size = filesize($log_file_path) ? filesize($log_file_path) : 1024;
-        $data = fread($f, $file_size);
-        if (empty($data)) {
-            return false;
-        }
-        $explode = explode("\n", $data);
-        $checking = false;
-        foreach ($explode as $line) {
-            $explode_segment = explode(":", $line);
-
-
-            if (!isset($explode_segment[0])) {
-                $id = $explode_segment[0];
-
-                if ($findID != $id) {
-                    $output[] = [
-                        'id' => $explode_segment[0],
-                        'time' => $explode_segment[1],
-                        'command' => $explode_segment[2],
-                        'operation' => $explode_segment[3],
-                        'result' => $explode_segment[4]
-                    ];
-                } else {
-                    $checking = true;
-                }
-            }
-        }
-
-        fclose($f);
-
-        if ($checking == false) {
-            return false;
-        }
-
-        $file = strtr($driver, $this->ResourceFile);
-        $log_file_path = __DIR__ . '../../../' . $this->path_folder . '/' . $file . '.log';
-        file_put_contents($log_file_path, "");
-
-        foreach ($output as $row) {
-            if (!empty($row['id'])) {
-                $txt_append = $row['id'] . ':' . $row['time'] . ':' . $row['command'] . ':' . $row['operation'] . ':' . $row['result'];
-                file_put_contents($log_file_path, $txt_append . "\n", FILE_APPEND);
-            }
-        }
-
-        return true;
     }
 
     protected function OpenResource($driver, $findID = "", $limit = 0)
@@ -270,7 +217,13 @@ class CommandHistoryServiceProvider implements ContainerServiceProviderInterface
     {
         $file = strtr($driver_selected, $this->ResourceFile);
         $log_file_path = __DIR__ . '../../../' . $this->path_folder . '/' . $file . '.log';
+
+        if(!file_exists($log_file_path) && !is_file($log_file_path))
+        {
+            return 0;
+        }
         $f = fopen($log_file_path, 'r');
+
         if ($f === false) {
             throw new Exception("File not found");
         }
@@ -280,10 +233,11 @@ class CommandHistoryServiceProvider implements ContainerServiceProviderInterface
             return 0;
         }
         $explode = explode("\n", $read);
-        $current_line = $explode[count($explode) - 1];
+        $current_line = $explode[count($explode) - 2];
         $explode_segment = explode(":", $current_line);
         return array(
             'last_id' => (int) $explode_segment[0],
+            'last_data' => $explode_segment,
             'count_data' => (int) count($explode)
         );
     }

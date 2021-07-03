@@ -42,7 +42,7 @@ class HistoryListCommand extends Command
 
     public function handle(): void
     {
-        $driver = $this->input->getOption('driver');
+        $driver = $this->input->getOption('driver')? $this->input->getOption('driver'): 'latest';
         $commands = $this->getCommand();
 
         $manage = new CommandHistoryServiceProvider();
