@@ -12,7 +12,7 @@ class CommandHistoryServiceProvider implements ContainerServiceProviderInterface
     public $driver;
 
     public $ResourceFile = [
-        'file'      => 'calculator',
+        'file'      => 'mesinhitung',
         'latest'    => 'latest',
         'composite' => 'composite'
     ];
