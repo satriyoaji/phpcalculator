@@ -12,7 +12,7 @@ try {
 
     $container = new Container();
     $dispatcher = new Dispatcher();
-    $app = new Application($container, $dispatcher, '1.0');
+    $app = new Application($container, $dispatcher, '1.0.1');
     $app->setName('Calculator');
     $configFile = require_once __DIR__ . '/config/config.php';
     $providers = $configFile['providers'];
